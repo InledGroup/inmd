@@ -1,5 +1,10 @@
 class QuillScribeAI {
     constructor() {
+        // Obtiene el contenido actual del editor Markdown
+        this.getEditorMarkdown = () => {
+            const editor = document.getElementById('markdown-output');
+            return editor ? editor.value : '';
+        };
         this.chatEngine = null;
         this.isLoading = false;
         this.lastResponse = '';
@@ -232,14 +237,17 @@ class QuillScribeAI {
         input.disabled = true;
         document.getElementById('send-message').disabled = true;
         
+        // Obtener el contenido actual del editor Markdown
+        const editorContent = this.getEditorMarkdown();
+
         // Agregar mensaje del usuario
         this.addMessage(message, 'user');
-        
+
         // Mostrar indicador de "pensando"
         const thinkingEl = this.addThinkingIndicator();
-        
+
         try {
-            // Enviar mensaje a la IA
+            // Enviar mensaje a la IA con contexto del editor
             const response = await this.chatEngine.chat.completions.create({
                 messages: [
                     {
@@ -248,30 +256,30 @@ class QuillScribeAI {
                     },
                     {
                         role: "user",
-                        content: message
+                        content: `Contenido actual del editor:\n${editorContent}\n\nPregunta o instrucción:\n${message}`
                     }
                 ],
                 temperature: 0.7,
                 max_tokens: 512
             });
-            
+
             const aiResponse = response.choices[0].message.content;
             this.lastResponse = aiResponse;
-            
+
             // Remover indicador de "pensando" y agregar respuesta
             thinkingEl.remove();
             this.addMessage(aiResponse, 'assistant');
-            
+
             // Habilitar botones de acción
             document.getElementById('insert-response').disabled = false;
             document.getElementById('copy-response').disabled = false;
-            
+
         } catch (error) {
             console.error('Error en chat:', error);
             thinkingEl.remove();
             this.addMessage('Lo siento, hubo un error al procesar tu mensaje. Inténtalo de nuevo.', 'assistant');
         }
-        
+
         this.isLoading = false;
         input.disabled = false;
         document.getElementById('send-message').disabled = false;
